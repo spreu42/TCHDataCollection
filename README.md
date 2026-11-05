@@ -49,7 +49,8 @@ Run `demo.FurstTest.main` from an IDE, with the working directory set to the pro
 root. The program reads `src/main/resources/DCWorkbook.xlsm` and signs into the
 iShelters demo/test site at `https://ishelter.demoshelters.com/login.php`. The
 production URL is commented out in the source.
-Shared date handling, form interactions, and autocomplete matching are in
+Spreadsheet workflows are implemented as separate classes under
+`src/main/java/demo/`; shared date, form, and autocomplete utilities are under
 `src/main/java/helpers/`.
 
 The program currently processes the first data row in each populated sheet,
