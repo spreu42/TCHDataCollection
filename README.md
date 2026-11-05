@@ -45,14 +45,25 @@ stops with an error if either variable is missing or blank.
 
 ### Run the current program
 
-Run `FurstTest.main` from an IDE, with the working directory set to the project
+Run `demo.FurstTest.main` from an IDE, with the working directory set to the project
 root. The program reads `src/main/resources/DCWorkbook.xlsm` and signs into the
 iShelters demo/test site at `https://ishelter.demoshelters.com/login.php`. The
 production URL is commented out in the source.
+Shared date handling, form interactions, and autocomplete matching are in
+`src/main/java/helpers/`.
 
-The program currently processes the first data row in each populated sheet.
-Workbook row clearing and saving are disabled for repeatable testing, so running
-it again submits the same data again. Use only appropriate test records.
+The program currently processes the first data row in each populated sheet,
+except Prescriptions, which processes every populated data row.
+The **Vaccinations** sheet runs independently when its first data row is
+populated; it does not require a check-in record or a "Yes" value in the
+check-in sheet. The **Medical Check-Up** sheet works the same way: a populated
+first data row runs independently and does not require a check-in. The
+**Medical Procedure** sheet also runs independently when populated. The
+**Prescriptions** sheet does too; consecutive prescriptions for the same
+animal reuse its current history page. Workbook row clearing and saving are
+disabled for repeatable testing, so running it again submits the same data
+again. Use only appropriate test records. Rows whose animal-name cell contains
+the template placeholder `All Fields` are skipped with a diagnostic message.
 
 ## Future investigation
 
