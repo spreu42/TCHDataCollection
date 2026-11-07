@@ -21,19 +21,6 @@ import java.util.Map;
 
 
 final class WorkflowSupport {
-    public static void deleteRow(Sheet sheet, int rowIndex) {
-        int lastRowNum = sheet.getLastRowNum();
-        if (rowIndex >= 0 && rowIndex < lastRowNum) {
-            sheet.shiftRows(rowIndex + 1, lastRowNum, -1);
-        }
-        if (rowIndex == lastRowNum) {
-            Row removingRow = sheet.getRow(rowIndex);
-            if (removingRow != null) {
-                sheet.removeRow(removingRow);
-            }
-        }
-    }
-
     static void selectPersonFromAutocomplete(
             WebDriver driver,
             String inputName,
@@ -69,22 +56,6 @@ final class WorkflowSupport {
         return value;
     }
 
-    static boolean hasPrescriptionData(Sheet prescriptionSheet) {
-        for (int rowIndex = 1; rowIndex <= prescriptionSheet.getLastRowNum(); rowIndex++) {
-            String animalName = getCellValueAsString(getCell(prescriptionSheet, rowIndex, 0)).trim();
-            if (animalName.isEmpty()) {
-                continue;
-            }
-            if ("All Fields".equalsIgnoreCase(animalName)) {
-                System.err.println("Skipping Prescriptions row " + (rowIndex + 1)
-                        + ": the animal-name cell contains the 'All Fields' template placeholder.");
-                continue;
-            }
-            return true;
-        }
-        return false;
-    }
-
     static void openAnimalFromSearch(WebDriver driver, String animalName, String sourceCell) {
         String normalizedName = animalName == null ? "" : animalName.trim();
         if (normalizedName.isEmpty()) {
@@ -116,8 +87,8 @@ final class WorkflowSupport {
         return row == null ? null : row.getCell(columnIndex);
     }
 
-    static boolean hasData(Sheet sheet) {
-        Cell firstCell = getCell(sheet, 1, 0);
+    static boolean hasData(Sheet sheet, int rowIndex) {
+        Cell firstCell = getCell(sheet, rowIndex, 0);
         return firstCell != null && !getCellValueAsString(firstCell).trim().isEmpty();
     }
 
@@ -148,18 +119,31 @@ final class WorkflowSupport {
         }
     }
 
-    static boolean hasMedicalRecordData(Sheet sheet, String sheetName) {
-        if (!hasData(sheet)) {
+    static boolean hasMedicalRecordData(Sheet sheet, String sheetName, int rowIndex) {
+        if (!hasData(sheet, rowIndex)) {
             return false;
         }
 
-        String animalName = getCellValueAsString(getCell(sheet, 1, 0)).trim();
+        String animalName = getCellValueAsString(getCell(sheet, rowIndex, 0)).trim();
         if ("All Fields".equalsIgnoreCase(animalName)) {
-            System.err.println("Skipping " + sheetName
-                    + ": A2 contains the 'All Fields' template placeholder, not an animal name.");
+            System.err.println("Skipping " + sheetName + " row " + (rowIndex + 1)
+                    + ": column A contains the 'All Fields' template placeholder, not an animal name.");
             return false;
         }
 
+        return true;
+    }
+
+    static boolean hasPrescriptionData(Sheet sheet, int rowIndex) {
+        String animalName = getCellValueAsString(getCell(sheet, rowIndex, 0)).trim();
+        if (animalName.isEmpty()) {
+            return false;
+        }
+        if ("All Fields".equalsIgnoreCase(animalName)) {
+            System.err.println("Skipping Prescriptions row " + (rowIndex + 1)
+                    + ": the animal-name cell contains the 'All Fields' template placeholder.");
+            return false;
+        }
         return true;
     }
 
@@ -184,7 +168,7 @@ final class WorkflowSupport {
                     "The " + historyName + " option has an unexpected destination for animal '"
                             + animalName + "': " + historyUrl);
         }
-        FormHelper.selectByVisibleText(driver, "history", historyName);
+        historyDropdown.selectByVisibleText(historyName);
 
         By addRecordControl = By.cssSelector(
                 "[title='" + addRecordTitle + "'], [alt='" + addRecordTitle + "']");
@@ -201,9 +185,28 @@ final class WorkflowSupport {
         }
     }
 
-    static boolean hasCheckInCatNames(Sheet checkinSheet) {
-        Cell namesCell = getCell(checkinSheet, 1, 1);
+    static boolean hasCheckInCatNames(Sheet checkinSheet, int rowIndex) {
+        Cell namesCell = getCell(checkinSheet, rowIndex, 1);
         return namesCell != null && !getCellValueAsString(namesCell).trim().isEmpty();
+    }
+
+    static void waitForFormSubmission(WebDriver driver, By submitButton, String formUrl,
+            String workflowName, int spreadsheetRow) {
+        try {
+            new WebDriverWait(driver, Duration.ofSeconds(15)).until(currentDriver -> {
+                if (!formUrl.equals(currentDriver.getCurrentUrl())) {
+                    return true;
+                }
+                return currentDriver.findElements(submitButton).stream()
+                        .noneMatch(WebElement::isDisplayed);
+            });
+        } catch (TimeoutException e) {
+            throw new IllegalStateException(
+                    workflowName + " row " + spreadsheetRow
+                            + " was not confirmed after clicking Add. Current URL: "
+                            + driver.getCurrentUrl(),
+                    e);
+        }
     }
 
     static void logCheckInField(WebDriver driver, By locator, String fieldName, String expectedValue) {
@@ -240,4 +243,3 @@ final class WorkflowSupport {
         System.err.println("[Page debug] content text:\n" + text);
     }
 }
-

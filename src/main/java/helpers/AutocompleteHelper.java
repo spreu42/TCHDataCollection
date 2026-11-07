@@ -1,6 +1,7 @@
 package helpers;
 
 import org.openqa.selenium.By;
+import org.openqa.selenium.StaleElementReferenceException;
 import org.openqa.selenium.TimeoutException;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
@@ -18,17 +19,29 @@ public final class AutocompleteHelper {
             WebDriver driver, By suggestions, String expectedName, String context) {
         String normalizedName = expectedName == null ? "" : expectedName.trim();
         try {
-            WebElement matchingSuggestion = new WebDriverWait(driver, Duration.ofSeconds(10))
-                    .until(currentDriver -> currentDriver.findElements(suggestions).stream()
-                            .filter(WebElement::isDisplayed)
-                            .filter(option -> matchesName(option.getText(), normalizedName))
-                            .findFirst()
-                            .orElse(null));
-            matchingSuggestion.click();
+            new WebDriverWait(driver, Duration.ofSeconds(10)).until(currentDriver -> {
+                for (WebElement option : currentDriver.findElements(suggestions)) {
+                    try {
+                        if (option.isDisplayed() && matchesName(option.getText(), normalizedName)) {
+                            option.click();
+                            return true;
+                        }
+                    } catch (StaleElementReferenceException ignored) {
+                        // The autocomplete list can be replaced while its suggestions are being read.
+                    }
+                }
+                return null;
+            });
         } catch (TimeoutException e) {
             List<String> availableSuggestions = driver.findElements(suggestions).stream()
-                    .filter(WebElement::isDisplayed)
-                    .map(option -> option.getText().trim())
+                    .map(option -> {
+                        try {
+                            return option.isDisplayed() ? option.getText().trim() : null;
+                        } catch (StaleElementReferenceException ignored) {
+                            return null;
+                        }
+                    })
+                    .filter(text -> text != null)
                     .collect(Collectors.toList());
             throw new IllegalStateException(
                     "Could not select '" + normalizedName + "' for " + context

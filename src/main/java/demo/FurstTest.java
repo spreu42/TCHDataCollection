@@ -13,6 +13,10 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
+
+import helpers.SpreadsheetRowHelper;
 
 
 public class FurstTest {
@@ -20,8 +24,12 @@ public class FurstTest {
         String username = WorkflowSupport.requireEnvironmentVariable("TCH_USER");
         String password = WorkflowSupport.requireEnvironmentVariable("TCH_PASSWORD");
         File workbookFile = new File("src/main/resources/DCWorkbook.xlsm");
-        try (FileInputStream input = new FileInputStream(workbookFile);
-             Workbook workbook = new XSSFWorkbook(input)) {
+        SpreadsheetRowHelper.ensureWorkbookClosed(workbookFile);
+        Workbook loadedWorkbook;
+        try (FileInputStream input = new FileInputStream(workbookFile)) {
+            loadedWorkbook = new XSSFWorkbook(input);
+        }
+        try (Workbook workbook = loadedWorkbook) {
             Sheet newCatSheet = workbook.getSheet("New Intake - Add");
             Sheet checkinSheet = workbook.getSheet("New Intake - Check-In");
             Sheet vaccSheet = workbook.getSheet("Vaccinations");
@@ -43,30 +51,69 @@ public class FurstTest {
                 wait.until(ExpectedConditions.elementToBeClickable(
                         By.cssSelector("a[href='/as/']"))).click();
 
-                String newlyAddedAnimalName = null;
-                if (WorkflowSupport.hasData(newCatSheet)) {
-                    newlyAddedAnimalName = WorkflowSupport.getCellValueAsString(newCatSheet.getRow(1).getCell(0)).trim();
-                    NewAnimalWorkflow.addNewCat(driver, newCatSheet);
+                List<String> addedAnimalNames = new ArrayList<>();
+                SpreadsheetRowHelper.processRows(
+                        newCatSheet,
+                        workbook,
+                        workbookFile,
+                        rowIndex -> WorkflowSupport.hasData(newCatSheet, rowIndex),
+                        rowIndex -> {
+                            String animalName = WorkflowSupport
+                                    .getCellValueAsString(WorkflowSupport.getCell(newCatSheet, rowIndex, 0))
+                                    .trim();
+                            NewAnimalWorkflow.addNewCat(driver, newCatSheet, rowIndex);
+                            addedAnimalNames.add(animalName);
+                        });
+
+                String newlyAddedAnimalName = addedAnimalNames.size() == 1
+                        ? addedAnimalNames.get(0)
+                        : null;
+                for (int rowIndex = 1; rowIndex <= checkinSheet.getLastRowNum(); rowIndex++) {
+                    if (WorkflowSupport.hasData(checkinSheet, rowIndex)
+                            && !WorkflowSupport.hasCheckInCatNames(checkinSheet, rowIndex)) {
+                        System.err.println("Skipping check-in row " + (rowIndex + 1)
+                                + ": the cat count is filled, but the cat-name list is blank.");
+                    }
                 }
-                boolean checkInCompleted = false;
-                if (WorkflowSupport.hasCheckInCatNames(checkinSheet)) {
-                    checkInCompleted = CheckInWorkflow.createCheckInRecord(driver, checkinSheet, newlyAddedAnimalName);
-                } else if (WorkflowSupport.hasData(checkinSheet)) {
-                    System.err.println(
-                            "Skipping check-in: the cat count is filled, but the cat-name list is blank.");
-                }
-                if (WorkflowSupport.hasMedicalRecordData(vaccSheet, "Vaccinations")) {
-                    VaccinationWorkflow.addVaccinations(driver, vaccSheet);
-                }
-                if (WorkflowSupport.hasMedicalRecordData(medCheckSheet, "Medical Check-Up")) {
-                    MedicalCheckUpWorkflow.addMedCheck(driver, medCheckSheet);
-                }
-                if (WorkflowSupport.hasMedicalRecordData(procedureSheet, "Medical Procedure")) {
-                    MedicalProcedureWorkflow.addProcedure(driver, procedureSheet);
-                }
-                if (WorkflowSupport.hasPrescriptionData(prescriptionSheet)) {
-                    PrescriptionWorkflow.addPrescriptions(driver, prescriptionSheet);
-                }
+                String[] directCheckInAnimalName = { newlyAddedAnimalName };
+                SpreadsheetRowHelper.processRows(
+                        checkinSheet,
+                        workbook,
+                        workbookFile,
+                        rowIndex -> WorkflowSupport.hasCheckInCatNames(checkinSheet, rowIndex),
+                        rowIndex -> {
+                            CheckInWorkflow.createCheckInRecord(
+                                    driver, checkinSheet, rowIndex, directCheckInAnimalName[0]);
+                            directCheckInAnimalName[0] = null;
+                        });
+                SpreadsheetRowHelper.processRows(
+                        vaccSheet,
+                        workbook,
+                        workbookFile,
+                        rowIndex -> WorkflowSupport.hasMedicalRecordData(
+                                vaccSheet, "Vaccinations", rowIndex),
+                        rowIndex -> VaccinationWorkflow.addVaccinations(driver, vaccSheet, rowIndex));
+                SpreadsheetRowHelper.processRows(
+                        medCheckSheet,
+                        workbook,
+                        workbookFile,
+                        rowIndex -> WorkflowSupport.hasMedicalRecordData(
+                                medCheckSheet, "Medical Check-Up", rowIndex),
+                        rowIndex -> MedicalCheckUpWorkflow.addMedCheck(driver, medCheckSheet, rowIndex));
+                SpreadsheetRowHelper.processRows(
+                        procedureSheet,
+                        workbook,
+                        workbookFile,
+                        rowIndex -> WorkflowSupport.hasMedicalRecordData(
+                                procedureSheet, "Medical Procedure", rowIndex),
+                        rowIndex -> MedicalProcedureWorkflow.addProcedure(driver, procedureSheet, rowIndex));
+                PrescriptionWorkflow.Context prescriptionContext = new PrescriptionWorkflow.Context();
+                SpreadsheetRowHelper.processRows(
+                        prescriptionSheet,
+                        workbook,
+                        workbookFile,
+                        rowIndex -> WorkflowSupport.hasPrescriptionData(prescriptionSheet, rowIndex),
+                        rowIndex -> prescriptionContext.addPrescription(driver, prescriptionSheet, rowIndex));
             } finally {
                 driver.quit();
             }

@@ -13,34 +13,32 @@ import java.time.LocalDate;
 import static demo.WorkflowSupport.*;
 
 final class MedicalProcedureWorkflow {
-    static void addProcedure(WebDriver driver, Sheet procedureSheet) {
-        if (!hasData(procedureSheet)) {
-            return;
-        }
-
-        String catName = getCellValueAsString(getCell(procedureSheet, 1, 0)).trim();
-        String neededOrPerformed = getCellValueAsString(getCell(procedureSheet, 1, 1)).trim();
-        LocalDate procedureDate = DateHelper.getCellValueAsDate(getCell(procedureSheet, 1, 2));
-        String procedureType = getCellValueAsString(getCell(procedureSheet, 1, 3)).trim();
-        String vet = getCellValueAsString(getCell(procedureSheet, 1, 4)).trim();
-        String vetClinic = getCellValueAsString(getCell(procedureSheet, 1, 5)).trim();
-        String genComments = getCellValueAsString(getCell(procedureSheet, 1, 6));
-        String hidComments = getCellValueAsString(getCell(procedureSheet, 1, 7));
+    static void addProcedure(WebDriver driver, Sheet procedureSheet, int rowIndex) {
+        int spreadsheetRow = rowIndex + 1;
+        String catName = getCellValueAsString(getCell(procedureSheet, rowIndex, 0)).trim();
+        String neededOrPerformed = getCellValueAsString(getCell(procedureSheet, rowIndex, 1)).trim();
+        LocalDate procedureDate = DateHelper.getCellValueAsDate(getCell(procedureSheet, rowIndex, 2));
+        String procedureType = getCellValueAsString(getCell(procedureSheet, rowIndex, 3)).trim();
+        String vet = getCellValueAsString(getCell(procedureSheet, rowIndex, 4)).trim();
+        String vetClinic = getCellValueAsString(getCell(procedureSheet, rowIndex, 5)).trim();
+        String genComments = getCellValueAsString(getCell(procedureSheet, rowIndex, 6));
+        String hidComments = getCellValueAsString(getCell(procedureSheet, rowIndex, 7));
 
         if (!"Needed".equalsIgnoreCase(neededOrPerformed)
-                && !"Performed".equalsIgnoreCase(neededOrPerformed)
-                && !"Given".equalsIgnoreCase(neededOrPerformed)) {
+                && !"Performed".equalsIgnoreCase(neededOrPerformed)) {
             throw new IllegalArgumentException(
-                    "Medical Procedure!B2 must be either 'Needed' or 'Performed'.");
+                    "Medical Procedure!B" + spreadsheetRow + " must be either 'Needed' or 'Performed'.");
         }
         if (procedureDate == null) {
-            throw new IllegalArgumentException("Medical Procedure!C2 must contain a valid date.");
+            throw new IllegalArgumentException(
+                    "Medical Procedure!C" + spreadsheetRow + " must contain a valid date.");
         }
         if (procedureType.isEmpty()) {
-            throw new IllegalArgumentException("Medical Procedure!D2 must contain a procedure type.");
+            throw new IllegalArgumentException(
+                    "Medical Procedure!D" + spreadsheetRow + " must contain a procedure type.");
         }
 
-        openAnimalFromSearch(driver, catName, "Medical Procedure!A2");
+        openAnimalFromSearch(driver, catName, "Medical Procedure!A" + spreadsheetRow);
         openAnimalHistoryAddForm(
                 driver, catName, "Medical History", "med.php", "Add a Medical Procedure").click();
 
@@ -56,10 +54,9 @@ final class MedicalProcedureWorkflow {
         }
         FormHelper.enterText(driver, "gc", genComments);
         FormHelper.enterText(driver, "hc", hidComments);
-        driver.findElement(By.cssSelector("input#submit[type='submit'][value='Add']")).click();
-
-        // Row clearing is disabled so the same test data can be reused.
-        // deleteRow(procedureSheet, 1);
+        By submitButton = By.cssSelector("input#submit[type='submit'][value='Add']");
+        String formUrl = driver.getCurrentUrl();
+        driver.findElement(submitButton).click();
+        waitForFormSubmission(driver, submitButton, formUrl, "Medical Procedure", spreadsheetRow);
     }
 }
-

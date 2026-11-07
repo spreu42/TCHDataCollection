@@ -50,21 +50,22 @@ root. The program reads `src/main/resources/DCWorkbook.xlsm` and signs into the
 iShelters demo/test site at `https://ishelter.demoshelters.com/login.php`. The
 production URL is commented out in the source.
 Spreadsheet workflows are implemented as separate classes under
-`src/main/java/demo/`; shared date, form, and autocomplete utilities are under
-`src/main/java/helpers/`.
+`src/main/java/demo/`; shared date, form, autocomplete, and spreadsheet-row
+utilities are under `src/main/java/helpers/`.
 
-The program currently processes the first data row in each populated sheet,
-except Prescriptions, which processes every populated data row.
-The **Vaccinations** sheet runs independently when its first data row is
-populated; it does not require a check-in record or a "Yes" value in the
-check-in sheet. The **Medical Check-Up** sheet works the same way: a populated
-first data row runs independently and does not require a check-in. The
-**Medical Procedure** sheet also runs independently when populated. The
-**Prescriptions** sheet does too; consecutive prescriptions for the same
-animal reuse its current history page. Workbook row clearing and saving are
-disabled for repeatable testing, so running it again submits the same data
-again. Use only appropriate test records. Rows whose animal-name cell contains
-the template placeholder `All Fields` are skipped with a diagnostic message.
+Each populated workflow sheet is processed independently, one data row at a
+time. New Animal, Check-In, Vaccinations, Medical Check-Up, Medical Procedure,
+and Prescriptions rows are processed in spreadsheet order. Consecutive
+prescriptions for the same animal reuse its current history page. After a row's
+submission is confirmed, that row is deleted and the workbook is saved
+immediately, so a later failure does not leave already-completed rows queued
+for resubmission. Rows that fail validation or submission remain in the
+workbook. Rows whose animal-name cell contains the template placeholder
+`All Fields` are skipped with a diagnostic message.
+
+The program writes to `src/main/resources/DCWorkbook.xlsm`; it still does not
+read or update the Desktop workbook. Close the workbook in Excel before
+running, because completed rows must be saved back to the file.
 
 ## Future investigation
 

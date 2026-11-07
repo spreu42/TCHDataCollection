@@ -23,14 +23,12 @@ import java.util.stream.Collectors;
 import static demo.WorkflowSupport.*;
 
 final class PrescriptionWorkflow {
-    static void addPrescriptions(WebDriver driver, Sheet prescriptionSheet) {
-        String currentAnimalName = null;
-        Map<String, String> animalProfileUrls = new HashMap<>();
-        for (int rowIndex = 1; rowIndex <= prescriptionSheet.getLastRowNum(); rowIndex++) {
+    static final class Context {
+        private String currentAnimalName;
+        private final Map<String, String> animalProfileUrls = new HashMap<>();
+
+        void addPrescription(WebDriver driver, Sheet prescriptionSheet, int rowIndex) {
             String catName = getCellValueAsString(getCell(prescriptionSheet, rowIndex, 0)).trim();
-            if (catName.isEmpty() || "All Fields".equalsIgnoreCase(catName)) {
-                continue;
-            }
             if (currentAnimalName == null || !currentAnimalName.equalsIgnoreCase(catName)) {
                 String animalKey = catName.toLowerCase(Locale.ROOT);
                 String animalProfileUrl = animalProfileUrls.get(animalKey);
@@ -72,8 +70,9 @@ final class PrescriptionWorkflow {
                     String url = currentDriver.getCurrentUrl();
                     return url.contains("medication.php?id=")
                             || url.contains("/mep/add.php?e=")
-                            || !currentDriver.findElements(
-                                    By.linkText("Animal's Medication Prescriptions")).isEmpty() ? url : null;
+                            || currentDriver.findElements(
+                                    By.linkText("Animal's Medication Prescriptions")).stream()
+                                    .anyMatch(WebElement::isDisplayed) ? url : null;
                 });
                 if (responseUrl.contains("/mep/add.php?e=")) {
                     throw new IllegalStateException(
@@ -232,4 +231,3 @@ final class PrescriptionWorkflow {
         FormHelper.selectByValue(driver, fieldName, Integer.toString(numericValue));
     }
 }
-

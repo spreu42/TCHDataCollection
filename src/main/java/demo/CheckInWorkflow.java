@@ -27,45 +27,46 @@ import java.util.stream.Collectors;
 import static demo.WorkflowSupport.*;
 
 final class CheckInWorkflow {
-    static boolean createCheckInRecord(
-            WebDriver driver, Sheet checkinSheet, String newlyAddedAnimalName) {
-        // Implementation for creating a check-in record based on the data in checkinSheet
-        String numberCats = getCellValueAsString(getCell(checkinSheet, 1, 0));
+    static void createCheckInRecord(
+            WebDriver driver, Sheet checkinSheet, int rowIndex, String newlyAddedAnimalName) {
+        int spreadsheetRow = rowIndex + 1;
+        String numberCats = getCellValueAsString(getCell(checkinSheet, rowIndex, 0));
         int numCats;
         try {
             numCats = Integer.parseInt(numberCats.trim());
         } catch (NumberFormatException e) {
             throw new IllegalArgumentException(
-                    "Check-in sheet has cat names but the cat count is blank or not a whole number.", e);
+                    "New Intake - Check-In!A" + spreadsheetRow
+                            + " must contain a whole-number cat count.", e);
         }
-        String catNames = getCellValueAsString(getCell(checkinSheet, 1, 1));
+        String catNames = getCellValueAsString(getCell(checkinSheet, rowIndex, 1));
         List<String> catList = Arrays.stream(catNames.split(";"))
                 .map(String::trim)
                 .filter(name -> !name.isEmpty())
                 .collect(Collectors.toList());
         if (numCats <= 0 || catList.size() != numCats) {
             throw new IllegalArgumentException(
-                    "Check-in sheet lists " + numCats + " cats but contains " + catList.size()
-                            + " non-empty names.");
+                    "New Intake - Check-In row " + spreadsheetRow + " lists " + numCats
+                            + " cats but contains " + catList.size() + " non-empty names.");
         }
-        String broughtBy = getCellValueAsString(getCell(checkinSheet, 1, 2));
-        String prevOwner = getCellValueAsString(getCell(checkinSheet, 1, 3));
-        String prevAgency = getCellValueAsString(getCell(checkinSheet, 1, 4));
-        String surrReason = getCellValueAsString(getCell(checkinSheet, 1, 5));
-        String checkinType = getCellValueAsString(getCell(checkinSheet, 1, 6));
-        Cell checkinDateCell = getCell(checkinSheet, 1, 7);
+        String broughtBy = getCellValueAsString(getCell(checkinSheet, rowIndex, 2));
+        String prevOwner = getCellValueAsString(getCell(checkinSheet, rowIndex, 3));
+        String prevAgency = getCellValueAsString(getCell(checkinSheet, rowIndex, 4));
+        String surrReason = getCellValueAsString(getCell(checkinSheet, rowIndex, 5));
+        String checkinType = getCellValueAsString(getCell(checkinSheet, rowIndex, 6));
+        Cell checkinDateCell = getCell(checkinSheet, rowIndex, 7);
         LocalDate checkinDate = checkinDateCell == null ? null : DateHelper.getCellValueAsDate(checkinDateCell);
-        String checker = getCellValueAsString(getCell(checkinSheet, 1, 8));
-        String sheltAnCounts = getCellValueAsString(getCell(checkinSheet, 1, 9));
-        String genComments = getCellValueAsString(getCell(checkinSheet, 1, 10));
-        String hidComments = getCellValueAsString(getCell(checkinSheet, 1, 11));
-        String move = getCellValueAsString(getCell(checkinSheet, 1, 12));
-        String currentlyWith = getCellValueAsString(getCell(checkinSheet, 1, 13));
-        String location = getCellValueAsString(getCell(checkinSheet, 1, 14));
-        String subLocation = getCellValueAsString(getCell(checkinSheet, 1, 15));
+        String checker = getCellValueAsString(getCell(checkinSheet, rowIndex, 8));
+        String sheltAnCounts = getCellValueAsString(getCell(checkinSheet, rowIndex, 9));
+        String genComments = getCellValueAsString(getCell(checkinSheet, rowIndex, 10));
+        String hidComments = getCellValueAsString(getCell(checkinSheet, rowIndex, 11));
+        String move = getCellValueAsString(getCell(checkinSheet, rowIndex, 12));
+        String currentlyWith = getCellValueAsString(getCell(checkinSheet, rowIndex, 13));
+        String location = getCellValueAsString(getCell(checkinSheet, rowIndex, 14));
+        String subLocation = getCellValueAsString(getCell(checkinSheet, rowIndex, 15));
         LocalDate today = LocalDate.now();
 
-        if (hasCheckInCatNames(checkinSheet)) {
+        if (hasCheckInCatNames(checkinSheet, rowIndex)) {
             if (newlyAddedAnimalName != null && newlyAddedAnimalName.equals(catList.get(0))) {
                 By directCheckInLink = By.xpath(
                         "//a[normalize-space(.)='Check-In' and starts-with(@href, '/chp/add.php?id=')]");
@@ -80,7 +81,8 @@ final class CheckInWorkflow {
                             e);
                 }
             } else {
-                openAnimalFromSearch(driver, catList.get(0), "New Intake - Check-In!B2");
+                openAnimalFromSearch(
+                        driver, catList.get(0), "New Intake - Check-In!B" + spreadsheetRow);
                 openAnimalHistoryAddForm(
                         driver, catList.get(0), "Check-In History", "check.php", "Add a Check-In").click();
             }
@@ -91,7 +93,8 @@ final class CheckInWorkflow {
             if (!catList.get(0).equals(selectedFirstAnimal == null ? "" : selectedFirstAnimal.trim())) {
                 throw new IllegalStateException(
                         "The Check-In form's first animal is '" + selectedFirstAnimal
-                                + "', but the first name in New Intake - Check-In!B2 is '"
+                                + "', but the first name in New Intake - Check-In!B"
+                                + spreadsheetRow + " is '"
                                 + catList.get(0) + "'.");
             }
             logCheckInField(driver, By.name("aa1"), "first animal", catList.get(0));
@@ -151,10 +154,19 @@ final class CheckInWorkflow {
             } else {
                 logCheckInField(driver, moveCheckbox, "mrc (move requested)", move);
             }
-            
-            By addButton = By.cssSelector("input[type='submit'][name='submit'][value='Add']");
+
+            By addButton = By.cssSelector(
+                    "input[type='submit'][id='submit'][name='submit'][value='Add']");
             String formUrl = driver.getCurrentUrl();
-            driver.findElement(addButton).click();
+            try {
+                Thread.sleep(1_000);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new IllegalStateException("Interrupted while pausing before Check-In submission.", e);
+            }
+            new WebDriverWait(driver, Duration.ofSeconds(10))
+                    .until(ExpectedConditions.elementToBeClickable(addButton))
+                    .click();
             try {
                 String submissionResult = new WebDriverWait(driver, Duration.ofSeconds(15))
                         .until(currentDriver -> {
@@ -188,7 +200,7 @@ final class CheckInWorkflow {
                 }
             } catch (TimeoutException e) {
                 Object validationIssues = ((JavascriptExecutor) driver).executeScript(
-                        "var button = document.querySelector(\"input[type='submit'][name='submit'][value='Add']\");" +
+                        "var button = document.querySelector(\"input[type='submit'][id='submit'][name='submit'][value='Add']\");" +
                                 "var form = button && button.form;" +
                                 "if (!form) return 'Check-In form is no longer present';" +
                                 "return Array.from(form.querySelectorAll(':invalid')).map(function(el) {" +
@@ -200,12 +212,7 @@ final class CheckInWorkflow {
                                 + driver.getCurrentUrl() + ". Form validation: " + validationIssues,
                         e);
             }
-
-            // Row clearing is disabled so the same test data can be reused.
-            // deleteRow(checkinSheet, 1);
-            return true;
         }
-        return false;
+
     }
 }
-

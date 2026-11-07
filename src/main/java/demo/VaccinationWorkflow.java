@@ -13,26 +13,24 @@ import java.time.LocalDate;
 import static demo.WorkflowSupport.*;
 
 final class VaccinationWorkflow {
-    static void addVaccinations(WebDriver driver, Sheet vaccSheet) {
-        if (!hasData(vaccSheet)) {
-            return;
-        }
-
-        String catName = getCellValueAsString(getCell(vaccSheet, 1, 0)).trim();
-        String neededOrGiven = getCellValueAsString(getCell(vaccSheet, 1, 1)).trim();
-        LocalDate vaccDate = DateHelper.getCellValueAsDate(getCell(vaccSheet, 1, 2));
-        String vaccType = getCellValueAsString(getCell(vaccSheet, 1, 3)).trim();
-        String vet = getCellValueAsString(getCell(vaccSheet, 1, 4));
-        String vetClinic = getCellValueAsString(getCell(vaccSheet, 1, 5));
-        String genComments = getCellValueAsString(getCell(vaccSheet, 1, 6));
-        String hidComments = getCellValueAsString(getCell(vaccSheet, 1, 7));
+    static void addVaccinations(WebDriver driver, Sheet vaccSheet, int rowIndex) {
+        int spreadsheetRow = rowIndex + 1;
+        String catName = getCellValueAsString(getCell(vaccSheet, rowIndex, 0)).trim();
+        String neededOrGiven = getCellValueAsString(getCell(vaccSheet, rowIndex, 1)).trim();
+        LocalDate vaccDate = DateHelper.getCellValueAsDate(getCell(vaccSheet, rowIndex, 2));
+        String vaccType = getCellValueAsString(getCell(vaccSheet, rowIndex, 3)).trim();
+        String vet = getCellValueAsString(getCell(vaccSheet, rowIndex, 4));
+        String vetClinic = getCellValueAsString(getCell(vaccSheet, rowIndex, 5));
+        String genComments = getCellValueAsString(getCell(vaccSheet, rowIndex, 6));
+        String hidComments = getCellValueAsString(getCell(vaccSheet, rowIndex, 7));
 
         if (!"Needed".equalsIgnoreCase(neededOrGiven) && !"Given".equalsIgnoreCase(neededOrGiven)) {
             throw new IllegalArgumentException(
-                    "Vaccinations!B2 must be either 'Needed' or 'Given'.");
+                    "Vaccinations!B" + spreadsheetRow + " must be either 'Needed' or 'Given'.");
         }
         if (vaccDate == null) {
-            throw new IllegalArgumentException("Vaccinations!C2 must contain a valid date.");
+            throw new IllegalArgumentException(
+                    "Vaccinations!C" + spreadsheetRow + " must contain a valid date.");
         }
 
         String vaccineCode;
@@ -44,10 +42,11 @@ final class VaccinationWorkflow {
             vaccineCode = "26571";
         } else {
             throw new IllegalArgumentException(
-                    "Vaccinations!D2 contains an unsupported vaccine: '" + vaccType + "'.");
+                    "Vaccinations!D" + spreadsheetRow + " contains an unsupported vaccine: '"
+                            + vaccType + "'.");
         }
 
-        openAnimalFromSearch(driver, catName, "Vaccinations!A2");
+        openAnimalFromSearch(driver, catName, "Vaccinations!A" + spreadsheetRow);
         openAnimalHistoryAddForm(
                 driver, catName, "Vaccination History", "vaccine.php", "Add a Vaccination Record").click();
 
@@ -59,10 +58,9 @@ final class VaccinationWorkflow {
         FormHelper.enterText(driver, "vc", vetClinic);
         FormHelper.enterText(driver, "gc", genComments);
         FormHelper.enterText(driver, "hc", hidComments);
-        driver.findElement(By.cssSelector("input[value='Add']")).click();
-
-        // Row clearing is disabled so the same test data can be reused.
-        // deleteRow(vaccSheet, 1);
+        By submitButton = By.cssSelector("input[value='Add']");
+        String formUrl = driver.getCurrentUrl();
+        driver.findElement(submitButton).click();
+        waitForFormSubmission(driver, submitButton, formUrl, "Vaccinations", spreadsheetRow);
     }
 }
-

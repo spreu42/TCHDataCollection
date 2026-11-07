@@ -13,30 +13,28 @@ import java.time.LocalDate;
 import static demo.WorkflowSupport.*;
 
 final class MedicalCheckUpWorkflow {
-    static void addMedCheck(WebDriver driver, Sheet medCheckSheet) {
-        if (!hasData(medCheckSheet)) {
-            return;
-        }
-
-        String catName = getCellValueAsString(getCell(medCheckSheet, 1, 0)).trim();
-        String neededOrGiven = getCellValueAsString(getCell(medCheckSheet, 1, 1)).trim();
-        LocalDate examDate = DateHelper.getCellValueAsDate(getCell(medCheckSheet, 1, 2));
-        String vet = getCellValueAsString(getCell(medCheckSheet, 1, 3));
-        String vetClinic = getCellValueAsString(getCell(medCheckSheet, 1, 4));
-        String genComments = getCellValueAsString(getCell(medCheckSheet, 1, 5));
-        String hidComments = getCellValueAsString(getCell(medCheckSheet, 1, 6));
-        String recommendations = getCellValueAsString(getCell(medCheckSheet, 1, 7));
-        String weight = getCellValueAsString(getCell(medCheckSheet, 1, 8));
+    static void addMedCheck(WebDriver driver, Sheet medCheckSheet, int rowIndex) {
+        int spreadsheetRow = rowIndex + 1;
+        String catName = getCellValueAsString(getCell(medCheckSheet, rowIndex, 0)).trim();
+        String neededOrGiven = getCellValueAsString(getCell(medCheckSheet, rowIndex, 1)).trim();
+        LocalDate examDate = DateHelper.getCellValueAsDate(getCell(medCheckSheet, rowIndex, 2));
+        String vet = getCellValueAsString(getCell(medCheckSheet, rowIndex, 3));
+        String vetClinic = getCellValueAsString(getCell(medCheckSheet, rowIndex, 4));
+        String genComments = getCellValueAsString(getCell(medCheckSheet, rowIndex, 5));
+        String hidComments = getCellValueAsString(getCell(medCheckSheet, rowIndex, 6));
+        String recommendations = getCellValueAsString(getCell(medCheckSheet, rowIndex, 7));
+        String weight = getCellValueAsString(getCell(medCheckSheet, rowIndex, 8));
 
         if (!"Needed".equalsIgnoreCase(neededOrGiven) && !"Given".equalsIgnoreCase(neededOrGiven)) {
             throw new IllegalArgumentException(
-                    "Medical Check-Up!B2 must be either 'Needed' or 'Given'.");
+                    "Medical Check-Up!B" + spreadsheetRow + " must be either 'Needed' or 'Given'.");
         }
         if (examDate == null) {
-            throw new IllegalArgumentException("Medical Check-Up!C2 must contain a valid date.");
+            throw new IllegalArgumentException(
+                    "Medical Check-Up!C" + spreadsheetRow + " must contain a valid date.");
         }
 
-        openAnimalFromSearch(driver, catName, "Medical Check-Up!A2");
+        openAnimalFromSearch(driver, catName, "Medical Check-Up!A" + spreadsheetRow);
         openAnimalHistoryAddForm(
                 driver, catName, "Medical History", "med.php", "Add a Medical Check-Up").click();
 
@@ -48,10 +46,9 @@ final class MedicalCheckUpWorkflow {
         FormHelper.enterText(driver, "hc", hidComments);
         FormHelper.enterText(driver, "r", recommendations);
         FormHelper.enterText(driver, "w", weight);
-        driver.findElement(By.cssSelector("input[value='Add']")).click();
-
-        // Row clearing is disabled so the same test data can be reused.
-        // deleteRow(medCheckSheet, 1);
+        By submitButton = By.cssSelector("input[value='Add']");
+        String formUrl = driver.getCurrentUrl();
+        driver.findElement(submitButton).click();
+        waitForFormSubmission(driver, submitButton, formUrl, "Medical Check-Up", spreadsheetRow);
     }
 }
-
