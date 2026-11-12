@@ -52,6 +52,14 @@ public class FurstTest {
                         By.cssSelector("a[href='/as/']"))).click();
 
                 List<String> addedAnimalNames = new ArrayList<>();
+                int countedNewAnimalRows = 0;
+                for (int rowIndex = 1; rowIndex <= newCatSheet.getLastRowNum(); rowIndex++) {
+                    if (WorkflowSupport.hasData(newCatSheet, rowIndex)) {
+                        countedNewAnimalRows++;
+                    }
+                }
+                final int totalNewAnimalRows = countedNewAnimalRows;
+                int[] remainingNewAnimalRows = { totalNewAnimalRows };
                 SpreadsheetRowHelper.processRows(
                         newCatSheet,
                         workbook,
@@ -61,8 +69,13 @@ public class FurstTest {
                             String animalName = WorkflowSupport
                                     .getCellValueAsString(WorkflowSupport.getCell(newCatSheet, rowIndex, 0))
                                     .trim();
-                            NewAnimalWorkflow.addNewCat(driver, newCatSheet, rowIndex);
+                            NewAnimalWorkflow.addNewCat(
+                                    driver,
+                                    newCatSheet,
+                                    rowIndex,
+                                    remainingNewAnimalRows[0] == totalNewAnimalRows);
                             addedAnimalNames.add(animalName);
+                            remainingNewAnimalRows[0]--;
                         });
 
                 String newlyAddedAnimalName = addedAnimalNames.size() == 1
@@ -87,6 +100,13 @@ public class FurstTest {
                             directCheckInAnimalName[0] = null;
                         });
                 SpreadsheetRowHelper.processRows(
+                        procedureSheet,
+                        workbook,
+                        workbookFile,
+                        rowIndex -> WorkflowSupport.hasMedicalRecordData(
+                                procedureSheet, "Medical Procedure", rowIndex),
+                        rowIndex -> MedicalProcedureWorkflow.addProcedure(driver, procedureSheet, rowIndex));
+                SpreadsheetRowHelper.processRows(
                         vaccSheet,
                         workbook,
                         workbookFile,
@@ -100,13 +120,6 @@ public class FurstTest {
                         rowIndex -> WorkflowSupport.hasMedicalRecordData(
                                 medCheckSheet, "Medical Check-Up", rowIndex),
                         rowIndex -> MedicalCheckUpWorkflow.addMedCheck(driver, medCheckSheet, rowIndex));
-                SpreadsheetRowHelper.processRows(
-                        procedureSheet,
-                        workbook,
-                        workbookFile,
-                        rowIndex -> WorkflowSupport.hasMedicalRecordData(
-                                procedureSheet, "Medical Procedure", rowIndex),
-                        rowIndex -> MedicalProcedureWorkflow.addProcedure(driver, procedureSheet, rowIndex));
                 PrescriptionWorkflow.Context prescriptionContext = new PrescriptionWorkflow.Context();
                 SpreadsheetRowHelper.processRows(
                         prescriptionSheet,

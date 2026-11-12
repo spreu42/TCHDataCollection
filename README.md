@@ -54,14 +54,38 @@ Spreadsheet workflows are implemented as separate classes under
 utilities are under `src/main/java/helpers/`.
 
 Each populated workflow sheet is processed independently, one data row at a
-time. New Animal, Check-In, Vaccinations, Medical Check-Up, Medical Procedure,
-and Prescriptions rows are processed in spreadsheet order. Consecutive
+time. New Animal, Check-In (including the optional Littermates? workflow),
+Medical Procedure, Vaccinations, Medical Check-Up, and Prescriptions rows are
+processed in spreadsheet order. For a litter row, column Q must be `Yes`, `No`,
+or blank. When it is `Yes` and column R identifies the mother, the program
+starts the litter entry from her record. If she is also listed in column B, she
+is omitted from the litter information; otherwise, all cats in column B are
+added as her kittens. Column R may be blank for a litter without a mother; in
+that case, the program starts from the first cat in column B and adds all listed
+cats to the litter. The litter record is submitted before the row's Check-In
+record. Consecutive
 prescriptions for the same animal reuse its current history page. After a row's
 submission is confirmed, that row is deleted and the workbook is saved
 immediately, so a later failure does not leave already-completed rows queued
 for resubmission. Rows that fail validation or submission remain in the
 workbook. Rows whose animal-name cell contains the template placeholder
 `All Fields` are skipped with a diagnostic message.
+The Litter Information and Add a Litter controls are each awaited for up to 10
+seconds, checking once per second. The Litter History panel is embedded in the
+animal profile, so the workflow locates the Add a Litter link in its frame.
+The Check-In Move Requested field accepts `Y` or `Yes`, case-insensitively.
+On the New Intake - Add sheet, the first cat uses the `Add Animal` link and
+subsequent cats use the `Add Another Animal` image link.
+This selection is based on rows processed during the current run; after a
+restart, the first remaining row is treated as the initial cat.
+When a New Intake - Add row reaches the Similar Animals page, the error output
+includes the page title and URL and saves a screenshot under the system
+temporary directory in `tch-workflow-failures`; the exact screenshot path is
+printed to the console. If the `Add a Litter` control is missing after opening
+Litter Information, the workflow reports the page details and saves a
+screenshot in the same directory. Check-In selections are made from the site's
+autocomplete suggestions; rejected submissions include the exact alert text
+and save a screenshot for review.
 
 The program writes to `src/main/resources/DCWorkbook.xlsm`; it still does not
 read or update the Desktop workbook. Close the workbook in Excel before

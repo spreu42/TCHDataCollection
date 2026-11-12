@@ -5,7 +5,9 @@ import helpers.AutocompleteHelper;
 import helpers.FormHelper;
 import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
+import org.openqa.selenium.OutputType;
 import org.openqa.selenium.StaleElementReferenceException;
+import org.openqa.selenium.TakesScreenshot;
 import org.openqa.selenium.TimeoutException;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
@@ -15,6 +17,10 @@ import org.openqa.selenium.support.ui.WebDriverWait;
 
 import org.apache.poi.ss.usermodel.*;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
@@ -197,8 +203,12 @@ final class WorkflowSupport {
                 if (!formUrl.equals(currentDriver.getCurrentUrl())) {
                     return true;
                 }
-                return currentDriver.findElements(submitButton).stream()
-                        .noneMatch(WebElement::isDisplayed);
+                try {
+                    return currentDriver.findElements(submitButton).stream()
+                            .noneMatch(WebElement::isDisplayed);
+                } catch (StaleElementReferenceException e) {
+                    return false;
+                }
             });
         } catch (TimeoutException e) {
             throw new IllegalStateException(
@@ -241,5 +251,16 @@ final class WorkflowSupport {
         System.err.println("[Page debug] " + label + ": title='" + driver.getTitle()
                 + "', url=" + driver.getCurrentUrl());
         System.err.println("[Page debug] content text:\n" + text);
+    }
+
+    static Path captureScreenshot(WebDriver driver, String label) throws IOException {
+        Path screenshotDirectory = Paths.get(
+                System.getProperty("java.io.tmpdir"), "tch-workflow-failures");
+        Files.createDirectories(screenshotDirectory);
+        String fileName = label.replaceAll("[^A-Za-z0-9.-]", "-")
+                + "-" + System.currentTimeMillis() + ".png";
+        Path screenshotPath = screenshotDirectory.resolve(fileName);
+        Files.write(screenshotPath, ((TakesScreenshot) driver).getScreenshotAs(OutputType.BYTES));
+        return screenshotPath;
     }
 }

@@ -6,6 +6,7 @@ import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.TimeoutException;
 import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.WebDriverException;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.Select;
@@ -13,6 +14,8 @@ import org.openqa.selenium.support.ui.WebDriverWait;
 
 import org.apache.poi.ss.usermodel.*;
 
+import java.io.IOException;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.time.LocalDate;
 
@@ -20,7 +23,8 @@ import java.time.LocalDate;
 import static demo.WorkflowSupport.*;
 
 final class NewAnimalWorkflow {
-    static void addNewCat(WebDriver driver, Sheet newCatSheet, int rowIndex) {
+    static void addNewCat(
+            WebDriver driver, Sheet newCatSheet, int rowIndex, boolean isInitialAnimal) {
         // Implementation for adding a new cat based on the data in newCatSheet
         
         //Gather all filled fields for a new cat
@@ -56,14 +60,22 @@ final class NewAnimalWorkflow {
         String specialNeedsStat = (newCatSheet.getRow(rowIndex) != null && newCatSheet.getRow(rowIndex).getCell(29) != null) ? getCellValueAsString(newCatSheet.getRow(rowIndex).getCell(29)) : "";
 
         if (hasData(newCatSheet, rowIndex)) {
-            By addAnimalLink = By.linkText("Add Animal");
+            By addAnimalLink = isInitialAnimal
+                    ? By.linkText("Add Animal")
+                    : By.cssSelector(
+                            "img[src='/i/add.gif'][title='Add Another Animal'][alt='Add Another Animal']");
+            String addAnimalLinkDescription = isInitialAnimal
+                    ? "Add Animal"
+                    : "Add Another Animal";
             try {
                 new WebDriverWait(driver, Duration.ofSeconds(15))
                         .until(ExpectedConditions.elementToBeClickable(addAnimalLink))
                         .click();
             } catch (TimeoutException e) {
                 throw new IllegalStateException(
-                        "Could not find the 'Add Animal' link after login. Current page: "
+                        "Could not find the '" + addAnimalLinkDescription
+                                + "' link before adding New Intake - Add row " + (rowIndex + 1)
+                                + ". Current page: "
                                 + driver.getTitle() + " (" + driver.getCurrentUrl() + ")",
                         e);
             }
@@ -144,9 +156,21 @@ final class NewAnimalWorkflow {
             boolean similarAnimalsPage = driver.getTitle().contains("Similar Animals")
                     || driver.findElements(similarAnimalsHeading).stream().anyMatch(WebElement::isDisplayed);
             if (similarAnimalsPage) {
-                throw new IllegalStateException(
+                IllegalStateException failure = new IllegalStateException(
                         "New Intake - Add row " + (rowIndex + 1)
-                                + " needs review on the Similar Animals page; the spreadsheet row was retained.");
+                                + " needs review on the Similar Animals page; the spreadsheet row was retained. "
+                                + "Current page: " + driver.getTitle() + " (" + driver.getCurrentUrl() + ").");
+                try {
+                    Path screenshotPath = captureScreenshot(
+                            driver, "new-intake-add-row-" + (rowIndex + 1));
+                    System.err.println("[Workflow failure] Screenshot saved to: "
+                            + screenshotPath.toAbsolutePath());
+                } catch (IOException | WebDriverException screenshotFailure) {
+                    failure.addSuppressed(screenshotFailure);
+                    System.err.println("[Workflow failure] Could not save screenshot: "
+                            + screenshotFailure.getMessage());
+                }
+                throw failure;
             }
         }
     }
