@@ -15,9 +15,9 @@ These are the steps the finished, everyday-use setup is intended to have:
 4. Wait for the process to finish before closing the browser.
 
 **Important:** The Desktop spreadsheet and run button are not connected to the
-program yet. For now, the program reads the copy of `DCWorkbook.xlsm` in the
-project's `src/main/resources` folder and must be started using the developer
-instructions below.
+program yet. The demo and production launchers read separate workbook copies
+from `src/main/resources` and must be started using the developer instructions
+below.
 
 ## Tech setup and current run instructions
 
@@ -43,15 +43,23 @@ set TCH_PASSWORD=your-password
 Keep credentials private and do not commit them to the repository. The program
 stops with an error if either variable is missing or blank.
 
-### Run the current program
+### Run the demo program
 
-Run `demo.FurstTest.main` from an IDE, with the working directory set to the project
-root. The program reads `src/main/resources/DCWorkbook.xlsm` and signs into the
-iShelters demo/test site at `https://ishelter.demoshelters.com/login.php`. The
-production URL is commented out in the source.
-Spreadsheet workflows are implemented as separate classes under
-`src/main/java/demo/`; shared date, form, autocomplete, and spreadsheet-row
-utilities are under `src/main/java/helpers/`.
+Run `demo.FurstTestDM.main` from an IDE, with the working directory set to the
+project root. The program reads `src/main/resources/DCWorkbookDM.xlsm` and signs
+into the iShelters demo/test site at
+`https://ishelter.demoshelters.com/login.php`.
+
+### Run the production program
+
+Run `prod.FurstTest.main` from an IDE, with the working directory set to the
+project root. It reads `src/main/resources/DCWorkbook.xlsm` and signs into
+production at `https://ishelter.ishelters.com/`.
+
+Demo workflows are under `src/main/java/demo/` and end in `DM`; production
+workflows with their original class names are under `src/main/java/prod/`.
+Both use the shared utilities under `src/main/java/helpers/`, including
+`WorkflowSupport`.
 
 Each populated workflow sheet is processed independently, one data row at a
 time. New Animal, Check-In (including the optional Littermates? workflow),
@@ -87,9 +95,11 @@ screenshot in the same directory. Check-In selections are made from the site's
 autocomplete suggestions; rejected submissions include the exact alert text
 and save a screenshot for review.
 
-The program writes to `src/main/resources/DCWorkbook.xlsm`; it still does not
-read or update the Desktop workbook. Close the workbook in Excel before
-running, because completed rows must be saved back to the file.
+Each launcher writes to its own workbook: the demo program uses
+`src/main/resources/DCWorkbookDM.xlsm`, and production uses
+`src/main/resources/DCWorkbook.xlsm`. Neither reads or updates the Desktop
+workbook. Close the selected workbook in Excel before running, because
+completed rows must be saved back to the file.
 
 ## Future investigation
 

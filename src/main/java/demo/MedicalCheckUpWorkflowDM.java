@@ -10,9 +10,9 @@ import org.apache.poi.ss.usermodel.*;
 import java.time.LocalDate;
 
 
-import static demo.WorkflowSupport.*;
+import static helpers.WorkflowSupport.*;
 
-final class MedicalCheckUpWorkflow {
+final class MedicalCheckUpWorkflowDM {
     static void addMedCheck(WebDriver driver, Sheet medCheckSheet, int rowIndex) {
         int spreadsheetRow = rowIndex + 1;
         String catName = getCellValueAsString(getCell(medCheckSheet, rowIndex, 0)).trim();
@@ -24,6 +24,7 @@ final class MedicalCheckUpWorkflow {
         String hidComments = getCellValueAsString(getCell(medCheckSheet, rowIndex, 6));
         String recommendations = getCellValueAsString(getCell(medCheckSheet, rowIndex, 7));
         String weight = getCellValueAsString(getCell(medCheckSheet, rowIndex, 8));
+        String temperature = getCellValueAsString(getCell(medCheckSheet, rowIndex, 9));
 
         if (!"Needed".equalsIgnoreCase(neededOrGiven) && !"Given".equalsIgnoreCase(neededOrGiven)) {
             throw new IllegalArgumentException(
@@ -46,6 +47,7 @@ final class MedicalCheckUpWorkflow {
         FormHelper.enterText(driver, "hc", hidComments);
         FormHelper.enterText(driver, "r", recommendations);
         FormHelper.enterText(driver, "w", weight);
+        FormHelper.enterText(driver, "t", temperature);
         By submitButton = By.cssSelector("input[value='Add']");
         String formUrl = driver.getCurrentUrl();
         driver.findElement(submitButton).click();

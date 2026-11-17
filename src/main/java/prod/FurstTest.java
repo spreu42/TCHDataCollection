@@ -1,5 +1,6 @@
-package demo;
+package prod;
 
+import helpers.WorkflowSupport;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
@@ -39,9 +40,7 @@ public class FurstTest {
 
             WebDriver driver = new ChromeDriver();
             try {
-                // Production site; keep disabled while testing.
-                // driver.get("https://ishelter.ishelters.com/");
-                driver.get("https://ishelter.demoshelters.com/login.php");
+                driver.get("https://ishelter.ishelters.com/");
 
                 WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
                 wait.until(ExpectedConditions.presenceOfElementLocated(By.id("email")));

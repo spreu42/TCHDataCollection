@@ -43,7 +43,8 @@ public final class SpreadsheetRowHelper {
                 workbookFile.getParentFile(), "~$" + workbookFile.getName());
         if (lockFile.exists()) {
             throw new IllegalStateException(
-                    "Close DCWorkbook.xlsm in Excel before running this program so completed rows can be saved. "
+                        "Close " + workbookFile.getName()
+                                + " in Excel before running this program so completed rows can be saved. "
                             + "If Excel is closed and this lock file is stale, verify that first.");
         }
     }

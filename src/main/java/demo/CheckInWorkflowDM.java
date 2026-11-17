@@ -27,9 +27,9 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 
-import static demo.WorkflowSupport.*;
+import static helpers.WorkflowSupport.*;
 
-final class CheckInWorkflow {
+final class CheckInWorkflowDM {
     static void createCheckInRecord(
             WebDriver driver, Sheet checkinSheet, int rowIndex, String newlyAddedAnimalName) {
         int spreadsheetRow = rowIndex + 1;
@@ -55,14 +55,14 @@ final class CheckInWorkflow {
         String littermatesValue = getCellValueAsString(getCell(checkinSheet, rowIndex, 16)).trim();
         String motherName = getCellValueAsString(getCell(checkinSheet, rowIndex, 17)).trim();
         String littermatesHeader = getCellValueAsString(getCell(checkinSheet, 0, 16)).trim();
-        boolean addLitter = LitterWorkflow.isRequested(littermatesValue, spreadsheetRow);
+        boolean addLitter = LitterWorkflowDM.isRequested(littermatesValue, spreadsheetRow);
         System.out.printf("[Check-In] row %d: column Q ('%s')='%s'; litter=%s%n",
                 spreadsheetRow,
                 littermatesHeader,
                 littermatesValue,
                 addLitter ? "add" : "skip");
         if (addLitter) {
-            LitterWorkflow.validateRequest(catList, motherName, spreadsheetRow);
+            LitterWorkflowDM.validateRequest(catList, motherName, spreadsheetRow);
         }
         String broughtBy = getCellValueAsString(getCell(checkinSheet, rowIndex, 2));
         String prevOwner = getCellValueAsString(getCell(checkinSheet, rowIndex, 3));
@@ -82,7 +82,7 @@ final class CheckInWorkflow {
         LocalDate today = LocalDate.now();
 
         if (addLitter) {
-            LitterWorkflow.addLitter(driver, catList, motherName, spreadsheetRow);
+            LitterWorkflowDM.addLitter(driver, catList, motherName, spreadsheetRow);
         }
 
         if (hasCheckInCatNames(checkinSheet, rowIndex)) {

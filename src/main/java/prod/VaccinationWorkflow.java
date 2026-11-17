@@ -1,4 +1,4 @@
-package demo;
+package prod;
 
 import helpers.DateHelper;
 import helpers.FormHelper;
@@ -10,7 +10,7 @@ import org.apache.poi.ss.usermodel.*;
 import java.time.LocalDate;
 
 
-import static demo.WorkflowSupport.*;
+import static helpers.WorkflowSupport.*;
 
 final class VaccinationWorkflow {
     static void addVaccinations(WebDriver driver, Sheet vaccSheet, int rowIndex) {

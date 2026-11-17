@@ -1,4 +1,4 @@
-package demo;
+package prod;
 
 import org.openqa.selenium.By;
 import org.openqa.selenium.NoSuchFrameException;
@@ -16,11 +16,11 @@ import java.time.Duration;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static demo.WorkflowSupport.captureScreenshot;
-import static demo.WorkflowSupport.openAnimalFromSearch;
-import static demo.WorkflowSupport.printPageSnapshot;
-import static demo.WorkflowSupport.selectPersonFromAutocomplete;
-import static demo.WorkflowSupport.waitForFormSubmission;
+import static helpers.WorkflowSupport.captureScreenshot;
+import static helpers.WorkflowSupport.openAnimalFromSearch;
+import static helpers.WorkflowSupport.printPageSnapshot;
+import static helpers.WorkflowSupport.selectPersonFromAutocomplete;
+import static helpers.WorkflowSupport.waitForFormSubmission;
 
 final class LitterWorkflow {
     private LitterWorkflow() {

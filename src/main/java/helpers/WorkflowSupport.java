@@ -1,4 +1,4 @@
-package demo;
+package helpers;
 
 import helpers.DateHelper;
 import helpers.AutocompleteHelper;
@@ -26,8 +26,8 @@ import java.util.List;
 import java.util.Map;
 
 
-final class WorkflowSupport {
-    static void selectPersonFromAutocomplete(
+public final class WorkflowSupport {
+    public static void selectPersonFromAutocomplete(
             WebDriver driver,
             String inputName,
             String suggestionListId,
@@ -54,7 +54,7 @@ final class WorkflowSupport {
                 driver, suggestions, normalizedName, fieldLabel + " from the site's suggestions");
     }
 
-    static String requireEnvironmentVariable(String name) {
+    public static String requireEnvironmentVariable(String name) {
         String value = System.getenv(name);
         if (value == null || value.trim().isEmpty()) {
             throw new IllegalStateException("Required environment variable is not set: " + name);
@@ -62,7 +62,7 @@ final class WorkflowSupport {
         return value;
     }
 
-    static void openAnimalFromSearch(WebDriver driver, String animalName, String sourceCell) {
+    public static void openAnimalFromSearch(WebDriver driver, String animalName, String sourceCell) {
         String normalizedName = animalName == null ? "" : animalName.trim();
         if (normalizedName.isEmpty()) {
             throw new IllegalArgumentException("Animal name is blank in " + sourceCell + ".");
@@ -88,17 +88,17 @@ final class WorkflowSupport {
         wait.until(ExpectedConditions.presenceOfElementLocated(By.name("history")));
     }
 
-    static Cell getCell(Sheet sheet, int rowIndex, int columnIndex) {
+    public static Cell getCell(Sheet sheet, int rowIndex, int columnIndex) {
         Row row = sheet.getRow(rowIndex);
         return row == null ? null : row.getCell(columnIndex);
     }
 
-    static boolean hasData(Sheet sheet, int rowIndex) {
+    public static boolean hasData(Sheet sheet, int rowIndex) {
         Cell firstCell = getCell(sheet, rowIndex, 0);
         return firstCell != null && !getCellValueAsString(firstCell).trim().isEmpty();
     }
 
-    static String getCellValueAsString(Cell cell) {
+    public static String getCellValueAsString(Cell cell) {
         if (cell == null) {
             return "";
         }
@@ -125,7 +125,7 @@ final class WorkflowSupport {
         }
     }
 
-    static boolean hasMedicalRecordData(Sheet sheet, String sheetName, int rowIndex) {
+    public static boolean hasMedicalRecordData(Sheet sheet, String sheetName, int rowIndex) {
         if (!hasData(sheet, rowIndex)) {
             return false;
         }
@@ -140,7 +140,7 @@ final class WorkflowSupport {
         return true;
     }
 
-    static boolean hasPrescriptionData(Sheet sheet, int rowIndex) {
+    public static boolean hasPrescriptionData(Sheet sheet, int rowIndex) {
         String animalName = getCellValueAsString(getCell(sheet, rowIndex, 0)).trim();
         if (animalName.isEmpty()) {
             return false;
@@ -153,7 +153,7 @@ final class WorkflowSupport {
         return true;
     }
 
-    static WebElement openAnimalHistoryAddForm(
+    public static WebElement openAnimalHistoryAddForm(
             WebDriver driver,
             String animalName,
             String historyName,
@@ -191,12 +191,12 @@ final class WorkflowSupport {
         }
     }
 
-    static boolean hasCheckInCatNames(Sheet checkinSheet, int rowIndex) {
+    public static boolean hasCheckInCatNames(Sheet checkinSheet, int rowIndex) {
         Cell namesCell = getCell(checkinSheet, rowIndex, 1);
         return namesCell != null && !getCellValueAsString(namesCell).trim().isEmpty();
     }
 
-    static void waitForFormSubmission(WebDriver driver, By submitButton, String formUrl,
+    public static void waitForFormSubmission(WebDriver driver, By submitButton, String formUrl,
             String workflowName, int spreadsheetRow) {
         try {
             new WebDriverWait(driver, Duration.ofSeconds(15)).until(currentDriver -> {
@@ -219,7 +219,7 @@ final class WorkflowSupport {
         }
     }
 
-    static void logCheckInField(WebDriver driver, By locator, String fieldName, String expectedValue) {
+    public static void logCheckInField(WebDriver driver, By locator, String fieldName, String expectedValue) {
         List<WebElement> fields = driver.findElements(locator);
         if (fields.isEmpty()) {
             System.out.printf("[Check-In debug] field=%s, expected=%s, actual=NOT FOUND%n",
@@ -244,7 +244,7 @@ final class WorkflowSupport {
                 fieldName, expectedValue, actualValue);
     }
 
-    static void printPageSnapshot(WebDriver driver, String label) {
+    public static void printPageSnapshot(WebDriver driver, String label) {
         Object text = ((JavascriptExecutor) driver).executeScript(
                 "var c = document.getElementById('content') || document.body;" +
                         "return c.innerText.substring(0, 5000);");
@@ -253,7 +253,7 @@ final class WorkflowSupport {
         System.err.println("[Page debug] content text:\n" + text);
     }
 
-    static Path captureScreenshot(WebDriver driver, String label) throws IOException {
+    public static Path captureScreenshot(WebDriver driver, String label) throws IOException {
         Path screenshotDirectory = Paths.get(
                 System.getProperty("java.io.tmpdir"), "tch-workflow-failures");
         Files.createDirectories(screenshotDirectory);

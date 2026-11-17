@@ -1,4 +1,4 @@
-package demo;
+package prod;
 
 import helpers.DateHelper;
 import helpers.FormHelper;
@@ -20,7 +20,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 
-import static demo.WorkflowSupport.*;
+import static helpers.WorkflowSupport.*;
 
 final class PrescriptionWorkflow {
     static final class Context {

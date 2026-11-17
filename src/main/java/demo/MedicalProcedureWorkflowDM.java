@@ -10,9 +10,9 @@ import org.apache.poi.ss.usermodel.*;
 import java.time.LocalDate;
 
 
-import static demo.WorkflowSupport.*;
+import static helpers.WorkflowSupport.*;
 
-final class MedicalProcedureWorkflow {
+final class MedicalProcedureWorkflowDM {
     static void addProcedure(WebDriver driver, Sheet procedureSheet, int rowIndex) {
         int spreadsheetRow = rowIndex + 1;
         String catName = getCellValueAsString(getCell(procedureSheet, rowIndex, 0)).trim();

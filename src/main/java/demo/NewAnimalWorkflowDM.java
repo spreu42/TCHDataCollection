@@ -20,9 +20,9 @@ import java.time.Duration;
 import java.time.LocalDate;
 
 
-import static demo.WorkflowSupport.*;
+import static helpers.WorkflowSupport.*;
 
-final class NewAnimalWorkflow {
+final class NewAnimalWorkflowDM {
     static void addNewCat(
             WebDriver driver, Sheet newCatSheet, int rowIndex, boolean isInitialAnimal) {
         // Implementation for adding a new cat based on the data in newCatSheet
